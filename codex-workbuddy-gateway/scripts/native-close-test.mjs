@@ -1,0 +1,41 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { execFileSync } from 'node:child_process';
+import { loadDotEnv } from '../dist/env.js';
+import { loadConfig } from '../dist/config.js';
+import { NativeDesktopRpcTrigger } from '../dist/native-desktop-trigger.js';
+import { windowsProcessTable, sameExecutable } from '../dist/native-process.js';
+loadDotEnv();
+const root=fileURLToPath(new URL('../',import.meta.url));
+const config=loadConfig(), sid=process.argv[2];
+const probe=JSON.parse(execFileSync(process.execPath,[path.join(root,'scripts/native-diagnostics.mjs'),sid],{encoding:'utf8',windowsHide:true,timeout:30000}));
+if(probe.active.length)throw Error('Native sessions are active; no exit requested');
+const trigger=new NativeDesktopRpcTrigger(config,18491,false);
+try {
+  const state=await trigger.inspect(sid);
+  if(state.state!=='idle')throw Error('Verification session is not idle; no exit requested');
+} finally {trigger.close();}
+const table=windowsProcessTable(), byPid=new Map(table.map(r=>[r.pid,r]));
+const roots=table.filter(r=>sameExecutable(r.exe,config.cliElectronPath)&&!sameExecutable(byPid.get(r.ppid)?.exe,config.cliElectronPath)&&!(/--type=|--stdio|daemon-app-server/.test(r.commandLine??'')));
+if(roots.length!==1)throw Error('Native root process is ambiguous');
+const version=await (await fetch('http://127.0.0.1:18491/json/version')).json();
+const url=new URL(version.webSocketDebuggerUrl);
+if(url.hostname!=='127.0.0.1'||url.port!=='18491'||url.protocol!=='ws:')throw Error('Unexpected debugger endpoint');
+const socket=new WebSocket(url);
+let closeSent=false;
+await new Promise((resolve,reject)=>{
+  const timer=setTimeout(()=>{socket.close();reject(Error('Graceful close request timed out'));},10000);
+  socket.addEventListener('open',()=>{closeSent=true;socket.send(JSON.stringify({id:1,method:'Browser.close'}));},{once:true});
+  socket.addEventListener('message',event=>{const m=JSON.parse(String(event.data));if(m.id===1){clearTimeout(timer);if(m.error)reject(Error(m.error.message));else resolve();}},{once:true});
+  socket.addEventListener('close',()=>{clearTimeout(timer);resolve();},{once:true});
+  socket.addEventListener('error',()=>{clearTimeout(timer);if(closeSent)resolve();else reject(Error('Native close connection failed before request'));},{once:true});
+});
+const alive=pid=>{try{process.kill(pid,0);return true;}catch{return false;}};
+const until=Date.now()+15000;
+while(alive(roots[0].pid)&&Date.now()<until)await new Promise(r=>setTimeout(r,250));
+socket.close();
+if(alive(roots[0].pid))throw Error('WorkBuddy did not exit through its graceful close endpoint; no force kill attempted');
+const result={method:'CDP Browser.close (graceful)',previousDesktopPid:roots[0].pid,allNativeProcessesExited:!windowsProcessTable().some(r=>sameExecutable(r.exe,config.cliElectronPath)),verifiedAt:new Date().toISOString()};
+fs.writeFileSync(path.join(root,'data/setup/normal-exit.json'),JSON.stringify(result,null,2));
+console.log(JSON.stringify(result));
