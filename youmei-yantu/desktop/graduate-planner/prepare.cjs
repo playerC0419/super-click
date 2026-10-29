@@ -1,0 +1,23 @@
+const fs=require('node:fs');
+const path=require('node:path');
+const src=path.join(__dirname,'../../mobile/graduate-planner/base');
+const dest=path.join(__dirname,'app');
+fs.cpSync(src,dest,{recursive:true});
+const file=path.join(dest,'planner-features.js');
+let js=fs.readFileSync(file,'utf8');
+const start=js.indexOf('function share(){'),end=js.indexOf('function enhanceOverlay()',start);
+if(start<0||end<0)throw Error('Share implementation changed');
+js=js.slice(0,start)+`function share(){overlay('<div class="modal" role="dialog" aria-modal="true" aria-labelledby="share-title"><h2 id="share-title">分享研途桌面版</h2><p>把研途安装包发给同学，安装后即可离线使用通用模板，各人的进度和备注独立保存。</p><div class="backup-note">若要分享你修改后的规划，请先关闭此窗口，再点击「备份与迁移」导出 JSON 文件。发送前请检查材料链接与个人备注。</div><div class="modal-actions"><button class="button primary" data-action="close">知道了</button></div></div>',true);}\n`+js.slice(end);
+js=js.replace(/if\(a==='copy-share-link'\)\{[^\n]+/,'');
+fs.writeFileSync(file,js);
+const html=path.join(dest,'index.html');
+let text=fs.readFileSync(html,'utf8').replace('<title>研途 · 三年制硕士规划</title>','<title>研途 · 离线桌面版</title>');
+text=text.replace('</head>','<link rel="stylesheet" href="./desktop.css"></head>');
+const branding=path.join(__dirname,'../../mobile/graduate-planner');
+for(const f of ['startup.css','startup.js'])fs.copyFileSync(path.join(branding,f),path.join(dest,f));
+text=text.replace('</head>','<link rel="stylesheet" href="./startup.css"></head>').replace('<body>','<body>'+fs.readFileSync(path.join(branding,'startup.html'),'utf8')+'<script src="./startup.js"></script>');
+fs.writeFileSync(html,text);
+fs.writeFileSync(path.join(dest,'desktop.css'),'.workspace-label::after{content:"离线桌面版";font-size:11px;display:block;color:#8390af;margin-top:8px}.sidebar .workspace-label{height:auto}');
+const appFile=path.join(dest,'app.js');let appJS=fs.readFileSync(appFile,'utf8');appJS=appJS.replace(/renderPage\(\);\s*\}\)\(\);\s*$/, "renderPage();\nwindow.dispatchEvent(new Event('yantu-planner-ready'));\n})();");fs.writeFileSync(appFile,appJS);
+for(const f of fs.readdirSync(dest)){if(/\.(html|js|css)$/.test(f)){const p=path.join(dest,f);fs.writeFileSync(p,fs.readFileSync(p,'utf8').replace(/(?<!优酶)研途/g,'优酶研途'));}}
+console.log('Bundled offline template; no browser personal data copied.');

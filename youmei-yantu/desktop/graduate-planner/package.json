@@ -1,0 +1,53 @@
+{
+  "name": "yantu-planner",
+  "productName": "优酶研途",
+  "version": "1.0.2",
+  "description": "三年制硕士离线规划工具",
+  "author": "玩家C",
+  "private": true,
+  "main": "main.cjs",
+  "scripts": {
+    "prepare:assets": "node prepare.cjs",
+    "start": "electron .",
+    "dist": "node prepare.cjs && electron-builder --win nsis --x64"
+  },
+  "build": {
+    "appId": "cn.yantu.graduateplanner",
+    "productName": "优酶研途",
+    "asar": true,
+    "directories": {
+      "output": "../../outputs/masters_timeline/desktop-build"
+    },
+    "files": [
+      "main.cjs",
+      "app/**/*",
+      "icon.ico",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "icon.ico",
+      "signExecutable": false,
+      "artifactName": "Youmei-Yantu-Setup-${version}-win-x64.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "优酶研途",
+      "deleteAppDataOnUninstall": false,
+      "installerLanguages": [
+        "zh_CN",
+        "en_US"
+      ],
+      "language": "2052",
+      "include": "installer.nsh"
+    }
+  },
+  "devDependencies": {
+    "electron": "44.8.0",
+    "electron-builder": "26.15.3"
+  }
+}

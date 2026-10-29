@@ -1,0 +1,25 @@
+{
+  "name": "yantu-mobile",
+  "version": "1.0.2",
+  "private": true,
+  "scripts": {
+    "prepare:web": "node prepare.cjs",
+    "sync": "node prepare.cjs && cap sync",
+    "build:web": "node prepare.cjs"
+  },
+  "description": "优酶研途安卓与 iPhone 离线规划",
+  "dependencies": {
+    "@capacitor/android": "8.5.3",
+    "@capacitor/app": "8.1.2",
+    "@capacitor/browser": "8.0.5",
+    "@capacitor/core": "8.5.3",
+    "@capacitor/filesystem": "8.1.5",
+    "@capacitor/ios": "8.5.3",
+    "@capacitor/preferences": "8.0.1",
+    "@capacitor/share": "8.0.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.3",
+    "esbuild": "0.28.2"
+  }
+}

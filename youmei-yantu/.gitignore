@@ -1,0 +1,16 @@
+node_modules/
+.cache-*/
+.npm-cache/
+.gradle/
+**/build/
+signing/
+local.properties
+*.apk
+*.exe
+*.p12
+*.jks
+*.keystore
+private-signing-info.json
+desktop/graduate-planner/app/
+mobile/graduate-planner/www/
+mobile/graduate-planner/ios/App/App/public/

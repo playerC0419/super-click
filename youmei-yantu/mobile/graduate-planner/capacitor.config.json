@@ -1,0 +1,9 @@
+{
+  "appId": "cn.yantu.graduateplanner.mobile",
+  "appName": "优酶研途",
+  "webDir": "www",
+  "server": {"hostname":"localhost","androidScheme":"https","iosScheme":"capacitor"},
+  "android": {"allowMixedContent":false},
+  "ios": {"contentInset":"never","allowsLinkPreview":false},
+  "plugins": {"SystemBars":{"insetsHandling":"css","initialViewportFitValueHint":"cover","style":"DARK"}}
+}
